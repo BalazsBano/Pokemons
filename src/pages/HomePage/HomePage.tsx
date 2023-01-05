@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { Button, Card, Dropdown, Modal } from "react-bootstrap";
+import { Button, Card, Dropdown, Form, Modal } from "react-bootstrap";
+import FormCheckInput from "react-bootstrap/esm/FormCheckInput";
+import FormCheckLabel from "react-bootstrap/esm/FormCheckLabel";
 import { getPokemonTypes, getPokemonsByTypes, getSelectedPokemonsData } from "../../api";
 import { ISelectedPokemon } from "../../api/configuration";
 import { IPokemon } from "../../api/getPokemonTypes/types";
@@ -13,9 +15,9 @@ export function HomePage(){
   const [errorMessageTypes, setErrorMessageTypes] = useState("");
   const [errorMessagePokemons, setErrorMessagePokemons] = useState("");
   const [searchInput, setSearchInput] = useState("");
+  const [catchedPokemon, setCatchedPokemon] = useState(false);
   const [show, setShow] = useState(false);
-  const modalClose = () => setShow(false);
-	const modalShow = () => setShow(true);
+  const [checkboxIsChecked, setCheckboxIsChecked] = useState(false)
 
   useEffect(() => {
     async function getData() {
@@ -50,7 +52,7 @@ export function HomePage(){
     const catched = filteredPokemons.filter((pokemon) => {
       return pokemon.name.match(name)
     })[0].catch
-    
+    setCatchedPokemon(catched)
     const pokemonData = await getSelectedPokemonsData(url)
     if (pokemonData.status === 500) {
       setErrorMessagePokemons(pokemonData.data);
@@ -62,20 +64,17 @@ export function HomePage(){
           abilities.push(pokemonData.data.abilities[i].ability.name)
         }
       }
-      
       const selectedPokemonData = {
         "name": name,
         "image": pokemonData.data.sprites.other.home.front_default,
         "weight": pokemonData.data.weight,
         "height": pokemonData.data.height,
-        "abilities": abilities.join(", ")
+        "abilities": abilities.join(", "),
+        "catch": catched
       }
       setSelectedPokemon(selectedPokemonData)
-      console.log(selectedPokemonData)
       setShow(true)
-    }
-
-    
+    }    
   }
 
   function filteringPokemons(inputString: string){
@@ -89,7 +88,33 @@ export function HomePage(){
   }
 
   function catchingPokemon(name: string){
-    console.log(name)
+    const catched = filteredPokemons.filter((pokemon) => {
+      return pokemon.name.match(name)
+    })[0].catch
+    let pokemons = pokemonsByTypes
+    for (let i = 0; i < pokemons.length; i++) {
+      if (pokemons[i].name === name) {
+        // console.log(pokemons[i])
+        if (pokemons[i].catch === false) {
+          pokemons[i].catch = true
+          setCatchedPokemon(true)
+        } else {
+          pokemons[i].catch = false
+          setCatchedPokemon(false)
+        }
+      }
+    }
+    setPokemonsByTypes(pokemons)
+  }
+
+  function handleCheckbox(e: any) {
+    console.log(e.target.value)
+    if (checkboxIsChecked === false) {
+      setCheckboxIsChecked(true)
+    } else {
+      setCheckboxIsChecked(false)
+    }
+    console.log(checkboxIsChecked)
   }
 
   return (
@@ -110,7 +135,10 @@ export function HomePage(){
       </div>
 
       <div>
-        <input className="m-3" type="text" placeholder="Search here" onChange={(e) => {filteringPokemons(e.target.value)}} value={searchInput}/>
+        <Form>
+          <input className="m-3" type="text" placeholder="Search here" onChange={(e) => {filteringPokemons(e.target.value)}} value={searchInput}/>
+          <Form.Check onChange={(e) => handleCheckbox(e)} className="ms-3 me-1" label="Catched Pokemons" value="catched"></Form.Check>
+        </Form>
       </div>
 
       <div className="d-lg-flex flex-column row g-3 m-5">
@@ -118,16 +146,18 @@ export function HomePage(){
           filteredPokemons.map((item, index) => {
             return (
               <div key={index} className="col-md-12">
-                <Card className="card mb-3">
+                <Card className={
+                  item.catch? (
+                    "card mx-3 border-success"
+                    ):(
+                    "card mx-3"
+                    )}>
                   <Card.Body className="">
                     <Card.Title className="title fs-6">
                       Pokemon
                     </Card.Title>
                     <Card.Link href="#" onClick={() => viewPokemon(item.url, item.name)} className="subtitle fs-6 text-capitalize">
                       {item.name}
-                    </Card.Link>
-                    <Card.Link>
-                      Link: {item.catch.toString()}
                     </Card.Link>
                   </Card.Body>
                 </Card>
@@ -140,18 +170,22 @@ export function HomePage(){
       </div>
 
       <div>
-        <Modal show={show} onHide={modalClose} >
+        <Modal show={show} onHide={() => setShow(false)} >
           <Modal.Header closeButton>
             <Modal.Title>{selectedPokemon.name}</Modal.Title>
           </Modal.Header>
           <Modal.Body>
-            <img src={selectedPokemon.image} />
+            <img className="w-100" src={selectedPokemon.image} alt="" />
             <p>Weight: {selectedPokemon.weight}</p>
             <p>Height: {selectedPokemon.height}</p>
-            <p>Not hidden abilities: {selectedPokemon.abilities}</p>
+            <p>Unhidden abilities: {selectedPokemon.abilities}</p>
           </Modal.Body>
           <Modal.Footer>
-            <Button type="button" onClick={() => catchingPokemon(selectedPokemon.name)}>Catch</Button>
+            {!catchedPokemon ? (
+              <Button type="button" onClick={() => catchingPokemon(selectedPokemon.name)}>Catch</Button>
+              ) : (
+              <Button type="button" onClick={() => catchingPokemon(selectedPokemon.name)}>Release</Button>
+              )}
           </Modal.Footer>
         </Modal>
       </div>
