@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Card, Dropdown } from "react-bootstrap";
+import { Card, Dropdown, Modal } from "react-bootstrap";
 import { getPokemonTypes, getPokemonsByTypes } from "../../api";
 import { IPokemon } from "../../api/getPokemonTypes/types";
 import "./style.sass"
@@ -7,9 +7,11 @@ import "./style.sass"
 export function HomePage(){
   const [pokemonTypes, setPokemonTypes] = useState([] as IPokemon[]);
   const [pokemonsByTypes, setPokemonsByTypes] = useState([] as IPokemon[]);
+  const [filteredPokemons, setFilteredPokemons] = useState([] as IPokemon[])
   const [errorMessageTypes, setErrorMessageTypes] = useState("");
   const [errorMessagePokemons, setErrorMessagePokemons] = useState("");
   const [searchInput, setSearchInput] = useState("");
+  const [show, setShow] = useState(false)
 
   useEffect(() => {
     async function getData() {
@@ -24,10 +26,6 @@ export function HomePage(){
     getData()
   }, []);
 
-  let dropdownStyle = {
-    background: '#2daaa5'
-  }
-
   async function getPokemons(url: string){
     const pokemonsByTyp = await getPokemonsByTypes(url)
     if (pokemonsByTyp.status === 500) {
@@ -40,6 +38,21 @@ export function HomePage(){
       }
       console.log(pokemons)
       setPokemonsByTypes(pokemons)
+      setFilteredPokemons(pokemons)
+    }
+  }
+
+  async function viewPokemon(url: string){
+    console.log(url)
+  }
+
+  function filteringPokemons(inputString: string){
+    setSearchInput(inputString)
+    if (inputString.length > 0) {
+      const filtPokemons = pokemonsByTypes.filter((pokemon) => {
+        return pokemon.name.match(inputString);
+      })
+      setFilteredPokemons(filtPokemons)
     }
   }
 
@@ -49,7 +62,7 @@ export function HomePage(){
       <div>
       {!errorMessageTypes ? (
         <Dropdown>
-          <Dropdown.Toggle style={dropdownStyle} className="dropdown-toggle rounded-pill border-0">Choose Pokemon type</Dropdown.Toggle>
+          <Dropdown.Toggle className="dropdown-toggle rounded-pill border-0">Choose Pokemon type</Dropdown.Toggle>
           <Dropdown.Menu>
             {pokemonTypes.map((item, index) => (
               <Dropdown.Item key={index} as="button" onClick={() => getPokemons(item.url)}>{item.name}</Dropdown.Item>
@@ -62,21 +75,21 @@ export function HomePage(){
       </div>
 
       <div>
-        <input className="m-3" type="text" placeholder="Search here" onChange={(e) => {setSearchInput(e.target.value); console.log(searchInput)}} value={searchInput}/>
+        <input className="m-3" type="text" placeholder="Search here" onChange={(e) => {filteringPokemons(e.target.value)}} value={searchInput}/>
       </div>
 
       <div>
         {!errorMessagePokemons ? (
-          pokemonsByTypes.map((item, index) => {
+          filteredPokemons.map((item, index) => {
             return (
               <div key={index}>
                 <Card className="card mb-3">
                     <Card.Body>
                       <Card.Title className="title fs-6">
-                        name: {item.name}
+                        Pokemon
                       </Card.Title>
-                      <Card.Link href={item.url} target="blank" className="subtitle fs-6 text-capitalize">
-                        {item.url}
+                      <Card.Link href="#" onClick={() => viewPokemon(item.url)} className="subtitle fs-6 text-capitalize">
+                        {item.name}
                       </Card.Link>
                     </Card.Body>
                   </Card>
@@ -86,6 +99,12 @@ export function HomePage(){
         ) : (
           <h3>{errorMessagePokemons}</h3>
         )}
+      </div>
+
+      <div>
+        <Modal>
+
+        </Modal>
       </div>
     </div>
   )
