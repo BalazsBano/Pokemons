@@ -3,6 +3,6 @@ export interface ISelectedPokemon {
   "image": string,
   "weight": number,
   "height": number,
-  "abilities": string
-  // "abilities": string[]
+  "abilities": string,
+  "catch": boolean
 }
