@@ -1,8 +1,8 @@
 import axios from "axios";
 
-const url: string = process.env.REACT_APP_API_URL || "";
+const url: string = process.env.REACT_APP_API_TYPES_URL || "";
 
-export async function getPokemons() {
+export async function getPokemonTypes() {
   try {
     const data = await axios.get(url)
     if (typeof data.data !== "object") {
