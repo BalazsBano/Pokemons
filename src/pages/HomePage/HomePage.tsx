@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Button, Card, Dropdown, Form, Modal } from "react-bootstrap";
+import { Button, Card, Dropdown, Form, Modal, Spinner } from "react-bootstrap";
 import FormCheckInput from "react-bootstrap/esm/FormCheckInput";
 import FormCheckLabel from "react-bootstrap/esm/FormCheckLabel";
 import { getPokemonTypes, getPokemonsByTypes, getSelectedPokemonsData } from "../../api";
@@ -11,15 +11,18 @@ export function HomePage(){
   const [pokemonTypes, setPokemonTypes] = useState([] as IPokemon[]);
   const [pokemonsByTypes, setPokemonsByTypes] = useState([] as IPokemon[]);
   const [filteredPokemons, setFilteredPokemons] = useState([] as IPokemon[]);
+  const [filteredCheckedPokemons, setFilteredCheckedPokemons] = useState([] as IPokemon[]);
   const [selectedPokemon, setSelectedPokemon] = useState({} as ISelectedPokemon);
   const [errorMessageTypes, setErrorMessageTypes] = useState("");
   const [errorMessagePokemons, setErrorMessagePokemons] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [catchedPokemon, setCatchedPokemon] = useState(false);
   const [show, setShow] = useState(false);
-  const [checkboxIsChecked, setCheckboxIsChecked] = useState(false)
+  const [checkboxIsChecked, setCheckboxIsChecked] = useState(false);
+  const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
+    setIsLoading(true)
     async function getData() {
       const pokemonTyp = await getPokemonTypes();
       if (pokemonTyp.status === 500) {
@@ -30,6 +33,7 @@ export function HomePage(){
       }
     }
     getData()
+    setIsLoading(false)
   }, []);
 
   async function getPokemons(url: string){
@@ -45,10 +49,12 @@ export function HomePage(){
       console.log(pokemons)
       setPokemonsByTypes(pokemons)
       setFilteredPokemons(pokemons)
+      setFilteredCheckedPokemons(pokemons)
     }
   }
 
   async function viewPokemon(url: string, name: string){
+    setIsLoading(true)
     const catched = filteredPokemons.filter((pokemon) => {
       return pokemon.name.match(name)
     })[0].catch
@@ -72,6 +78,7 @@ export function HomePage(){
         "abilities": abilities.join(", "),
         "catch": catched
       }
+      setIsLoading(false)
       setSelectedPokemon(selectedPokemonData)
       setShow(true)
     }    
@@ -84,13 +91,18 @@ export function HomePage(){
         return pokemon.name.match(inputString);
       })
       setFilteredPokemons(filtPokemons)
+      setFilteredCheckedPokemons(filtPokemons)
     }
   }
 
+  function checkboxFilteredPokemons(){
+    const checkFiltPokemons = pokemonsByTypes.filter((pokemon) => {
+      return pokemon.catch === true;
+    })
+    setFilteredCheckedPokemons(checkFiltPokemons)
+  }
+
   function catchingPokemon(name: string){
-    const catched = filteredPokemons.filter((pokemon) => {
-      return pokemon.name.match(name)
-    })[0].catch
     let pokemons = pokemonsByTypes
     for (let i = 0; i < pokemons.length; i++) {
       if (pokemons[i].name === name) {
@@ -108,65 +120,74 @@ export function HomePage(){
   }
 
   function handleCheckbox(e: any) {
-    console.log(e.target.value)
     if (checkboxIsChecked === false) {
       setCheckboxIsChecked(true)
+      checkboxFilteredPokemons()
     } else {
       setCheckboxIsChecked(false)
+      setFilteredCheckedPokemons(filteredPokemons)
     }
-    console.log(checkboxIsChecked)
   }
 
+
   return (
-    <div className="h-100 mt-3 d-flex flex-column justify-content-center align-items-center">
-      <div>
-      {!errorMessageTypes ? (
-        <Dropdown>
-          <Dropdown.Toggle className="dropdown-toggle rounded-pill border-0">Choose Pokemon type</Dropdown.Toggle>
-          <Dropdown.Menu>
-            {pokemonTypes.map((item, index) => (
-              <Dropdown.Item key={index} as="button" onClick={() => getPokemons(item.url)}>{item.name}</Dropdown.Item>
-            ))}
-          </Dropdown.Menu>
-        </Dropdown>
+    <div>
+      {isLoading ? (
+        <div className="d-flex justify-content-center mt-5">
+          <Spinner className="spinner-border text-info"></Spinner>
+        </div>
       ) : (
-        <h3>{errorMessageTypes}</h3>
+        <div className="h-100 mt-3 d-flex flex-column justify-content-center align-items-center">
+          <Dropdown>
+            <Dropdown.Toggle className="dropdown-toggle rounded-pill border-0">Choose Pokemon type</Dropdown.Toggle>
+            <Dropdown.Menu>
+              {pokemonTypes.map((item, index) => (
+                <Dropdown.Item key={index} as="button" onClick={() => getPokemons(item.url)}>{item.name}</Dropdown.Item>
+              ))}
+            </Dropdown.Menu>
+          </Dropdown>
+          {!errorMessageTypes ? (
+            null
+          ) : (
+            <h3>{errorMessageTypes}</h3>
+          )}
+        <div>
+          <Form>
+            <Form.Control className="my-3" type="text" placeholder="Search here" onChange={(e) => {filteringPokemons(e.target.value)}} value={searchInput}></Form.Control>
+            <Form.Check onChange={(e) => handleCheckbox(e)} className="ms-3 me-1" label="Catched Pokemons" value={checkboxIsChecked.toString()}></Form.Check>
+          </Form>
+        </div>
+      </div>
       )}
-      </div>
 
-      <div>
-        <Form>
-          <input className="m-3" type="text" placeholder="Search here" onChange={(e) => {filteringPokemons(e.target.value)}} value={searchInput}/>
-          <Form.Check onChange={(e) => handleCheckbox(e)} className="ms-3 me-1" label="Catched Pokemons" value="catched"></Form.Check>
-        </Form>
-      </div>
-
-      <div className="d-lg-flex flex-column row g-3 m-5">
-        {!errorMessagePokemons ? (
-          filteredPokemons.map((item, index) => {
-            return (
-              <div key={index} className="col-md-12">
-                <Card className={
-                  item.catch? (
-                    "card mx-3 border-success"
-                    ):(
-                    "card mx-3"
-                    )}>
-                  <Card.Body className="">
-                    <Card.Title className="title fs-6">
-                      Pokemon
-                    </Card.Title>
-                    <Card.Link href="#" onClick={() => viewPokemon(item.url, item.name)} className="subtitle fs-6 text-capitalize">
-                      {item.name}
-                    </Card.Link>
-                  </Card.Body>
-                </Card>
-              </div>
-            )
-          })
-        ) : (
-          <h3>{errorMessagePokemons}</h3>
-        )}
+      <div className="h-100 mt-3 d-flex flex-column justify-content-center align-items-center">
+        <div className="d-lg-flex flex-column row g-3 m-5">
+          {!errorMessagePokemons ? (
+            filteredCheckedPokemons.map((item, index) => {
+              return (
+                <div key={index} className="col-md-12">
+                  <Card className={
+                    item.catch? (
+                      "card mx-3 border-success"
+                      ):(
+                      "card mx-3"
+                      )}>
+                    <Card.Body className="">
+                      <Card.Title className="title fs-6">
+                        Pokemon
+                      </Card.Title>
+                      <Card.Link href="#" onClick={() => viewPokemon(item.url, item.name)} className="subtitle fs-6 text-capitalize">
+                        {item.name}
+                      </Card.Link>
+                    </Card.Body>
+                  </Card>
+                </div>
+              )
+            })
+          ) : (
+            <h3>{errorMessagePokemons}</h3>
+          )}
+        </div>
       </div>
 
       <div>
