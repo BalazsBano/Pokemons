@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { Button, Card, Dropdown, Form, Modal, Spinner } from "react-bootstrap";
-import FormCheckInput from "react-bootstrap/esm/FormCheckInput";
-import FormCheckLabel from "react-bootstrap/esm/FormCheckLabel";
 import { getPokemonTypes, getPokemonsByTypes, getSelectedPokemonsData } from "../../api";
 import { ISelectedPokemon } from "../../api/configuration";
 import { IPokemon } from "../../api/getPokemonTypes/types";

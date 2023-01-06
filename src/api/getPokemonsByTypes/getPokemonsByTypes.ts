@@ -1,7 +1,4 @@
 import axios from "axios";
-import { IPokemon } from "../getPokemonTypes/types";
-
-const url: string = process.env.REACT_APP_API_TYPES_URL || "";
 
 export async function getPokemonsByTypes(url: string) {
   try {

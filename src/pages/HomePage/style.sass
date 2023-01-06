@@ -1,9 +1,6 @@
 $basecolor: #05c3f7
 $primary: $basecolor
 
-@import url("https://fonts.googleapis.com/css?family=Open+Sans")
-@import 'node_modules/bootstrap/scss/bootstrap.scss'
-
 @mixin color-scheme($text, $bg)
   background-color: $bg
   color: $text
@@ -14,3 +11,5 @@ $primary: $basecolor
 .dropdown-toggle
   &:hover
   @include color-scheme(white, #0389ad)
+
+@import 'node_modules/bootstrap/scss/bootstrap.scss'
