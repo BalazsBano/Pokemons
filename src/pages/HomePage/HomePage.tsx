@@ -1,11 +1,17 @@
 import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { isLoadingFalse, isLoadingTrue } from "../../store/loading";
 import { Button, Card, Dropdown, Form, Modal, Spinner } from "react-bootstrap";
 import { getPokemonTypes, getPokemonsByTypes, getSelectedPokemonsData } from "../../api";
 import { ISelectedPokemon } from "../../api/configuration";
 import { IPokemon } from "../../api/getPokemonTypes/types";
+import { Loading } from "../../store/loading";
 import "./style.sass"
+import { RootState } from "../../store/store";
 
 export function HomePage(){
+  const dispatch = useDispatch();
+  const { loading }: any = useSelector((state: RootState) => state.loading.isLoading);
   const [pokemonTypes, setPokemonTypes] = useState([] as IPokemon[]);
   const [pokemonsByTypes, setPokemonsByTypes] = useState([] as IPokemon[]);
   const [filteredPokemons, setFilteredPokemons] = useState([] as IPokemon[]);
@@ -17,10 +23,9 @@ export function HomePage(){
   const [catchedPokemon, setCatchedPokemon] = useState(false);
   const [show, setShow] = useState(false);
   const [checkboxIsChecked, setCheckboxIsChecked] = useState(false);
-  const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
-    setIsLoading(true)
+    dispatch(isLoadingTrue())
     async function getData() {
       const pokemonTyp = await getPokemonTypes();
       if (pokemonTyp.status === 500) {
@@ -31,10 +36,11 @@ export function HomePage(){
       }
     }
     getData()
-    setIsLoading(false)
+    dispatch(isLoadingFalse())
   }, []);
 
   async function getPokemons(url: string){
+    dispatch(isLoadingTrue())
     const pokemonsByTyp = await getPokemonsByTypes(url)
     if (pokemonsByTyp.status === 500) {
       setErrorMessagePokemons(pokemonsByTyp.data);
@@ -49,10 +55,11 @@ export function HomePage(){
       setFilteredPokemons(pokemons)
       setFilteredCheckedPokemons(pokemons)
     }
+    dispatch(isLoadingFalse())
   }
 
   async function viewPokemon(url: string, name: string){
-    setIsLoading(true)
+    dispatch(isLoadingTrue())
     const catched = filteredPokemons.filter((pokemon) => {
       return pokemon.name.match(name)
     })[0].catch
@@ -76,7 +83,7 @@ export function HomePage(){
         "abilities": abilities.join(", "),
         "catch": catched
       }
-      setIsLoading(false)
+      dispatch(isLoadingFalse())
       setSelectedPokemon(selectedPokemonData)
       setShow(true)
     }    
@@ -104,7 +111,6 @@ export function HomePage(){
     let pokemons = pokemonsByTypes
     for (let i = 0; i < pokemons.length; i++) {
       if (pokemons[i].name === name) {
-        // console.log(pokemons[i])
         if (pokemons[i].catch === false) {
           pokemons[i].catch = true
           setCatchedPokemon(true)
@@ -130,7 +136,7 @@ export function HomePage(){
 
   return (
     <div>
-      {isLoading ? (
+      {loading ? (
         <div className="d-flex justify-content-center mt-5">
           <Spinner className="spinner-border text-info"></Spinner>
         </div>
