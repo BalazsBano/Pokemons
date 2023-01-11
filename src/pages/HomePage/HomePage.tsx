@@ -1,78 +1,98 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { isLoadingFalse, isLoadingTrue } from "../../store/loading";
 import { Button, Card, Dropdown, Form, Modal, Spinner } from "react-bootstrap";
 import { getPokemonTypes, getPokemonsByTypes, getSelectedPokemonsData } from "../../api";
-import { ISelectedPokemon } from "../../api/configuration";
 import { IPokemon } from "../../api/getPokemonTypes/types";
-import { Loading } from "../../store/loading";
-import "./style.sass"
 import { RootState } from "../../store/store";
+import {
+  searchString,
+  isLoadingFalse,
+  isLoadingTrue,
+  isCheckedFalse,
+  isCheckedTrue,
+  isModalShowingFalse,
+  isModalShowingTrue,
+  isCatchedFalse,
+  isCatchedTrue,
+  catchedPokemonsState,
+  errorMessagePokemonTypes,
+  errorMessagePokemons,
+  typesOfPokemons,
+  pokemonsByTypesState,
+  pokemonFilterState,
+  pokemonCheckboxFilterState,
+  selectedPokemonState
+} from "../../store";
+import "./style.sass"
 
 export function HomePage(){
   const dispatch = useDispatch();
-  const { loading }: any = useSelector((state: RootState) => state.loading.isLoading);
-  const [pokemonTypes, setPokemonTypes] = useState([] as IPokemon[]);
-  const [pokemonsByTypes, setPokemonsByTypes] = useState([] as IPokemon[]);
-  const [filteredPokemons, setFilteredPokemons] = useState([] as IPokemon[]);
-  const [filteredCheckedPokemons, setFilteredCheckedPokemons] = useState([] as IPokemon[]);
-  const [selectedPokemon, setSelectedPokemon] = useState({} as ISelectedPokemon);
-  const [errorMessageTypes, setErrorMessageTypes] = useState("");
-  const [errorMessagePokemons, setErrorMessagePokemons] = useState("");
-  const [searchInput, setSearchInput] = useState("");
-  const [catchedPokemon, setCatchedPokemon] = useState(false);
-  const [show, setShow] = useState(false);
-  const [checkboxIsChecked, setCheckboxIsChecked] = useState(false);
+  const loading = useSelector((state: RootState) => state.loading.isLoading);
+  const checkboxIsChecked = useSelector((state: RootState) => state.checkbox.isChecked);
+  const show = useSelector((state: RootState) => state.modalShow.isModalShowing);
+  const searchInput = useSelector((state: RootState) => state.search.search);
+  const errorMessageForPokemons = useSelector((state: RootState) => state.errorMessagePokemons.errorMessagePokemons);
+  const errorMessageForPokemonTypes = useSelector((state: RootState) => state.errorMessagePokemonTypes.errorMessagePokemonTypes);
+  const pokemonTypes = useSelector((state: RootState) => state.typesOfPokemons.typesOfPokemons);
+  const pokemonsByTypes = useSelector((state: RootState) => state.pokemonsByTypesState.pokemonsByTypesState);
+  const catchedPokemons = useSelector((state: RootState) => state.catchedPokemonsState.catchedPokemonsState);
+  const filteredPokemons = useSelector((state: RootState) => state.pokemonFilterState.pokemonFilterState);
+  const checkFilteredPokemons = useSelector((state: RootState) => state.pokemonCheckboxFilterState.pokemonCheckboxFilterState);
+  const selectedPokemon = useSelector((state: RootState) => state.selectedPokemonState.selectedPokemonState);
 
   useEffect(() => {
-    dispatch(isLoadingTrue())
+    dispatch(isLoadingTrue());
     async function getData() {
       const pokemonTyp = await getPokemonTypes();
       if (pokemonTyp.status === 500) {
-        setErrorMessageTypes(pokemonTyp.data);
-        console.log(pokemonTyp.status)
+        dispatch(errorMessagePokemonTypes(pokemonTyp.data));
+        console.log(pokemonTyp.status);
       } else {
-        setPokemonTypes(pokemonTyp.data)
+        dispatch(typesOfPokemons(pokemonTyp.data))
       }
     }
-    getData()
-    dispatch(isLoadingFalse())
+    getData();
+    dispatch(isLoadingFalse());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function getPokemons(url: string){
-    dispatch(isLoadingTrue())
-    const pokemonsByTyp = await getPokemonsByTypes(url)
+    dispatch(isLoadingTrue());
+    const pokemonsByTyp = await getPokemonsByTypes(url);
     if (pokemonsByTyp.status === 500) {
-      setErrorMessagePokemons(pokemonsByTyp.data);
-      console.log(pokemonsByTyp.status)
+      dispatch(errorMessagePokemons(pokemonsByTyp.data));
+      console.log(pokemonsByTyp.status);
     } else {
       let pokemons = []
       for (let i = 0; i < pokemonsByTyp.data.length; i++) {
-        pokemons.push({...pokemonsByTyp.data[i].pokemon, catch: false})
+        pokemons.push({...pokemonsByTyp.data[i].pokemon, catch: false});
       }
-      console.log(pokemons)
-      setPokemonsByTypes(pokemons)
-      setFilteredPokemons(pokemons)
-      setFilteredCheckedPokemons(pokemons)
+      dispatch(pokemonsByTypesState(pokemons));
+      dispatch(pokemonFilterState(pokemons));
+      dispatch(pokemonCheckboxFilterState(pokemons));
     }
-    dispatch(isLoadingFalse())
+    dispatch(isLoadingFalse());
   }
 
   async function viewPokemon(url: string, name: string){
-    dispatch(isLoadingTrue())
-    const catched = filteredPokemons.filter((pokemon) => {
-      return pokemon.name.match(name)
-    })[0].catch
-    setCatchedPokemon(catched)
+    dispatch(isLoadingTrue());
+    let catched;
+    if(catchedPokemons.includes(name)) {
+      catched = true
+      dispatch(isCatchedTrue());
+    } else {
+      catched = false
+      dispatch(isCatchedFalse());
+    }
     const pokemonData = await getSelectedPokemonsData(url)
     if (pokemonData.status === 500) {
-      setErrorMessagePokemons(pokemonData.data);
-      console.log(pokemonData.status)
+      dispatch(errorMessagePokemons(pokemonData.data));
+      console.log(pokemonData.status);
     } else {
       let abilities = [];
       for (let i = 0; i < pokemonData.data.abilities.length; i++) {
         if (pokemonData.data.abilities[i].is_hidden === false) {
-          abilities.push(pokemonData.data.abilities[i].ability.name)
+          abilities.push(pokemonData.data.abilities[i].ability.name);
         }
       }
       const selectedPokemonData = {
@@ -83,53 +103,62 @@ export function HomePage(){
         "abilities": abilities.join(", "),
         "catch": catched
       }
-      dispatch(isLoadingFalse())
-      setSelectedPokemon(selectedPokemonData)
-      setShow(true)
+      dispatch(selectedPokemonState(selectedPokemonData))
+      dispatch(isLoadingFalse());
+      dispatch(isModalShowingTrue());
     }    
   }
 
   function filteringPokemons(inputString: string){
-    setSearchInput(inputString)
+    dispatch(searchString(inputString));
+    let filtPokemons = [] as IPokemon[];
     if (inputString.length > 0) {
-      const filtPokemons = pokemonsByTypes.filter((pokemon) => {
+      filtPokemons = pokemonsByTypes.filter((pokemon) => {
         return pokemon.name.match(inputString);
       })
-      setFilteredPokemons(filtPokemons)
-      setFilteredCheckedPokemons(filtPokemons)
+    } else {
+      filtPokemons = pokemonsByTypes
     }
+    dispatch(pokemonFilterState(filtPokemons));
+    console.log(filtPokemons)
+    dispatch(pokemonCheckboxFilterState(filtPokemons));
   }
 
   function checkboxFilteredPokemons(){
-    const checkFiltPokemons = pokemonsByTypes.filter((pokemon) => {
-      return pokemon.catch === true;
-    })
-    setFilteredCheckedPokemons(checkFiltPokemons)
-  }
-
-  function catchingPokemon(name: string){
-    let pokemons = pokemonsByTypes
-    for (let i = 0; i < pokemons.length; i++) {
-      if (pokemons[i].name === name) {
-        if (pokemons[i].catch === false) {
-          pokemons[i].catch = true
-          setCatchedPokemon(true)
-        } else {
-          pokemons[i].catch = false
-          setCatchedPokemon(false)
+    const checkFiltPokemons = [] as IPokemon[];
+    for (let i = 0; i < catchedPokemons.length; i++) {
+      for (let j = 0; j < filteredPokemons.length; j++) {
+        if(filteredPokemons[j].name === catchedPokemons[i]){
+          checkFiltPokemons.push(filteredPokemons[j])
         }
       }
     }
-    setPokemonsByTypes(pokemons)
+    dispatch(pokemonCheckboxFilterState(checkFiltPokemons));
+  }
+
+  function catchingPokemon(name: string){
+    let pokemons = pokemonsByTypes;
+    for (let i = 0; i < pokemons.length; i++) {
+      if (pokemons[i].name === name) {
+        dispatch(catchedPokemonsState(name))
+        if (pokemons[i].catch === false) {
+          dispatch(isCatchedTrue());
+        } 
+        if (pokemons[i].catch === true) {
+          dispatch(isCatchedFalse());
+        }
+      }
+    }
+    dispatch(pokemonsByTypesState(pokemons))
   }
 
   function handleCheckbox(e: any) {
     if (checkboxIsChecked === false) {
-      setCheckboxIsChecked(true)
-      checkboxFilteredPokemons()
+      dispatch(isCheckedTrue());
+      checkboxFilteredPokemons();
     } else {
-      setCheckboxIsChecked(false)
-      setFilteredCheckedPokemons(filteredPokemons)
+      dispatch(isCheckedFalse());
+      dispatch(pokemonCheckboxFilterState(filteredPokemons));
     }
   }
 
@@ -150,10 +179,10 @@ export function HomePage(){
               ))}
             </Dropdown.Menu>
           </Dropdown>
-          {!errorMessageTypes ? (
+          {!errorMessageForPokemonTypes ? (
             null
           ) : (
-            <h3>{errorMessageTypes}</h3>
+            <h3>{errorMessageForPokemonTypes}</h3>
           )}
         <div>
           <Form>
@@ -165,52 +194,52 @@ export function HomePage(){
       )}
 
       <div className="h-100 mt-3 d-flex flex-column justify-content-center align-items-center">
-        <div className="d-lg-flex flex-column row g-3 m-5">
-          {!errorMessagePokemons ? (
-            filteredCheckedPokemons.map((item, index) => {
+        <div className="d-lg-flex flex-column row g-3 m-5 w-50">
+          {!errorMessageForPokemons ? (
+            checkFilteredPokemons.map((item, index) => {
               return (
-                <div key={index} className="col-md-12">
+                <div key={index} className="col-lg-12">
                   <Card className={
-                    item.catch? (
+                    catchedPokemons.includes(item.name) ? (
                       "card mx-3 border-success"
                       ):(
                       "card mx-3"
-                      )}>
+                      )} onClick={() => viewPokemon(item.url, item.name)}>
                     <Card.Body className="">
                       <Card.Title className="title fs-6">
                         Pokemon
                       </Card.Title>
-                      <Card.Link href="#" onClick={() => viewPokemon(item.url, item.name)} className="subtitle fs-6 text-capitalize">
+                      <Card.Subtitle className="subtitle fs-6 text-capitalize">
                         {item.name}
-                      </Card.Link>
+                      </Card.Subtitle>
                     </Card.Body>
                   </Card>
                 </div>
               )
             })
           ) : (
-            <h3>{errorMessagePokemons}</h3>
+            <h3>{errorMessageForPokemons}</h3>
           )}
         </div>
       </div>
 
       <div>
-        <Modal show={show} onHide={() => setShow(false)} >
+        <Modal show={show} onHide={() => dispatch(isModalShowingFalse())} >
           <Modal.Header closeButton>
             <Modal.Title>{selectedPokemon.name}</Modal.Title>
           </Modal.Header>
           <Modal.Body>
-            <img className="w-100" src={selectedPokemon.image} alt="" />
+            <img className="w-100" src={selectedPokemon.image} alt="Pokemon" />
             <p>Weight: {selectedPokemon.weight}</p>
             <p>Height: {selectedPokemon.height}</p>
             <p>Unhidden abilities: {selectedPokemon.abilities}</p>
           </Modal.Body>
           <Modal.Footer>
-            {!catchedPokemon ? (
-              <Button type="button" onClick={() => catchingPokemon(selectedPokemon.name)}>Catch</Button>
-              ) : (
+            {catchedPokemons.includes(selectedPokemon.name) ? (
               <Button type="button" onClick={() => catchingPokemon(selectedPokemon.name)}>Release</Button>
-              )}
+              ) : (
+              <Button type="button" onClick={() => catchingPokemon(selectedPokemon.name)}>Catch</Button>
+            )}
           </Modal.Footer>
         </Modal>
       </div>

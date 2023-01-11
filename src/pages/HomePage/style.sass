@@ -5,11 +5,11 @@ $primary: $basecolor
   background-color: $bg
   color: $text
 
-.dropdown-toggle::after
-  content: none
-
 .dropdown-toggle
   &:hover
   @include color-scheme(white, #0389ad)
+
+.card:hover
+  cursor: pointer
 
 @import 'node_modules/bootstrap/scss/bootstrap.scss'
