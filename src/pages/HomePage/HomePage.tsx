@@ -120,7 +120,6 @@ export function HomePage(){
       filtPokemons = pokemonsByTypes
     }
     dispatch(pokemonFilterState(filtPokemons));
-    console.log(filtPokemons)
     dispatch(pokemonCheckboxFilterState(filtPokemons));
   }
 
